@@ -314,6 +314,14 @@ struct flb_stackdriver *flb_stackdriver_conf_create(struct flb_output_instance *
         ctx->trace_key = flb_sds_create(DEFAULT_TRACE_KEY);
     }
 
+    tmp = flb_output_get_property("span_id_key", ins);
+    if (tmp) {
+        ctx->span_id_key = flb_sds_create(tmp);
+    }
+    else {
+        ctx->span_id_key = flb_sds_create(DEFAULT_SPANID_KEY);
+    }
+
     tmp = flb_output_get_property("log_name_key", ins);
     if (tmp) {
         ctx->log_name_key = flb_sds_create(tmp);
@@ -525,6 +533,7 @@ int flb_stackdriver_conf_destroy(struct flb_stackdriver *ctx)
     flb_sds_destroy(ctx->resource);
     flb_sds_destroy(ctx->severity_key);
     flb_sds_destroy(ctx->trace_key);
+    flb_sds_destroy(ctx->span_id_key);
     flb_sds_destroy(ctx->log_name_key);
     flb_sds_destroy(ctx->http_request_key);
     flb_sds_destroy(ctx->labels_key);

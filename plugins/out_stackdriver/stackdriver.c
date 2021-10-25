@@ -1288,6 +1288,7 @@ static int pack_json_payload(int insert_id_extracted,
         ctx->labels_key,
         ctx->severity_key,
         ctx->trace_key,
+        ctx->span_id_key,
         ctx->log_name_key,
         stream
         /* more special fields are required to be added, but, if this grows with more
@@ -1464,6 +1465,10 @@ static flb_sds_t stackdriver_format(struct flb_stackdriver *ctx,
     flb_sds_t trace;
     char stackdriver_trace[PATH_MAX];
     const char *new_trace;
+
+    /* Parameters for spanID */
+    int spanid_extracted = FLB_FALSE;
+    flb_sds_t spanid;
 
     /* Parameters for log name */
     int log_name_extracted = FLB_FALSE;
@@ -1817,6 +1822,7 @@ static flb_sds_t stackdriver_format(struct flb_stackdriver *ctx,
          *  "jsonPayload": {...},
          *  "timestamp": "...",
          *  "trace": "..."
+         *  "spanId": "..."
          * }
          */
         entry_size = 3;
@@ -1834,6 +1840,14 @@ static flb_sds_t stackdriver_format(struct flb_stackdriver *ctx,
         if (ctx->trace_key
             && get_string(&trace, obj, ctx->trace_key) == 0) {
             trace_extracted = FLB_TRUE;
+            entry_size += 1;
+        }
+
+        /* Extract spanid */
+        spanid_extracted = FLB_FALSE;
+        if (ctx->span_id_key
+            && get_string(&spanid, obj, ctx->span_id_key) == 0) {
+            spanid_extracted = FLB_TRUE;
             entry_size += 1;
         }
 
@@ -1939,6 +1953,16 @@ static flb_sds_t stackdriver_format(struct flb_stackdriver *ctx,
             msgpack_pack_str(&mp_pck, len);
             msgpack_pack_str_body(&mp_pck, new_trace, len);
             flb_sds_destroy(trace);
+        }
+
+        /* Add spanId into the log entry */
+        if (spanid_extracted == FLB_TRUE) {
+            msgpack_pack_str(&mp_pck, 6);
+            msgpack_pack_str_body(&mp_pck, "spanId", 6);
+            len = flb_sds_len(spanid);
+            msgpack_pack_str(&mp_pck, len);
+            msgpack_pack_str_body(&mp_pck, spanid, len);
+            flb_sds_destroy(spanid);
         }
 
         /* Add insertId field into the log entry */

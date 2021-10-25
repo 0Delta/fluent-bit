@@ -2,5 +2,6 @@
 	"1591111124," \
 	"{"	\
         "\"trace\": \"test-trace-id-xyz\"" \
+        "\"spanId\": \"test-span-id-abc\"" \
 	"}]"
-	
+
