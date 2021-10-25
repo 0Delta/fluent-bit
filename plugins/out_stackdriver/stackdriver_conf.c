@@ -326,9 +326,69 @@ struct flb_stackdriver *flb_stackdriver_conf_create(struct flb_output_instance *
         ctx->metadata_server_auth = true;
     }
 
-    if (ctx->http_request_key) {
-        http_request_key_size = flb_sds_len(ctx->http_request_key);
-        if (http_request_key_size >= INT_MAX) {
+    tmp = flb_output_get_property("export_to_project_id", ins);
+    if (tmp) {
+        ctx->export_to_project_id = flb_sds_create(tmp);
+        flb_plg_info(ctx->ins, "export_to_project_id set to %s", ctx->export_to_project_id);
+    }
+
+    tmp = flb_output_get_property("resource", ins);
+    if (tmp) {
+        ctx->resource = flb_sds_create(tmp);
+    }
+    else {
+        ctx->resource = flb_sds_create(FLB_SDS_RESOURCE_TYPE);
+    }
+
+    tmp = flb_output_get_property("severity_key", ins);
+    if (tmp) {
+        ctx->severity_key = flb_sds_create(tmp);
+    }
+    else {
+        ctx->severity_key = flb_sds_create(DEFAULT_SEVERITY_KEY);
+    }
+
+    tmp = flb_output_get_property("autoformat_stackdriver_trace", ins);
+    if (tmp) {
+        ctx->autoformat_stackdriver_trace = flb_utils_bool(tmp);
+    }
+    else {
+        ctx->autoformat_stackdriver_trace = FLB_FALSE;
+    }
+
+    tmp = flb_output_get_property("trace_key", ins);
+    if (tmp) {
+        ctx->trace_key = flb_sds_create(tmp);
+    }
+    else {
+        ctx->trace_key = flb_sds_create(DEFAULT_TRACE_KEY);
+    }
+
+    tmp = flb_output_get_property("span_id_key", ins);
+    if (tmp) {
+        ctx->span_id_key = flb_sds_create(tmp);
+    }
+    else {
+        ctx->span_id_key = flb_sds_create(DEFAULT_SPANID_KEY);
+    }
+
+    tmp = flb_output_get_property("log_name_key", ins);
+    if (tmp) {
+        ctx->log_name_key = flb_sds_create(tmp);
+    }
+    else {
+        ctx->log_name_key = flb_sds_create(DEFAULT_LOG_NAME_KEY);
+    }
+
+    tmp = flb_output_get_property("http_request_key", ins);
+    if (tmp) {
+        http_request_key = flb_sds_create(tmp);
+        http_request_key_size = flb_sds_len(http_request_key);
+        if (http_request_key_size < INT_MAX) {
+            ctx->http_request_key = http_request_key;
+            ctx->http_request_key_size = (int)http_request_key_size;
+        } 
+        else {
             flb_plg_error(ctx->ins, "http_request_key is too long");
             flb_sds_destroy(ctx->http_request_key);
             ctx->http_request_key = NULL;
@@ -489,7 +549,44 @@ int flb_stackdriver_conf_destroy(struct flb_stackdriver *ctx)
         flb_sds_destroy(ctx->node_name);
         flb_sds_destroy(ctx->local_resource_id);
     }
-    
+
+    if (ctx->is_generic_resource_type){
+        flb_sds_destroy(ctx->location);
+        flb_sds_destroy(ctx->namespace_id);
+        if(ctx->node_id){
+            flb_sds_destroy(ctx->node_id);
+        }
+        else {
+            flb_sds_destroy(ctx->job);
+            flb_sds_destroy(ctx->task_id);
+        }
+    }
+
+    flb_sds_destroy(ctx->metadata_server);
+    flb_sds_destroy(ctx->credentials_file);
+    flb_sds_destroy(ctx->type);
+    flb_sds_destroy(ctx->project_id);
+    flb_sds_destroy(ctx->export_to_project_id);
+    flb_sds_destroy(ctx->private_key_id);
+    flb_sds_destroy(ctx->private_key);
+    flb_sds_destroy(ctx->client_email);
+    flb_sds_destroy(ctx->client_id);
+    flb_sds_destroy(ctx->auth_uri);
+    flb_sds_destroy(ctx->token_uri);
+    flb_sds_destroy(ctx->resource);
+    flb_sds_destroy(ctx->severity_key);
+    flb_sds_destroy(ctx->trace_key);
+    flb_sds_destroy(ctx->span_id_key);
+    flb_sds_destroy(ctx->log_name_key);
+    flb_sds_destroy(ctx->http_request_key);
+    flb_sds_destroy(ctx->labels_key);
+    flb_sds_destroy(ctx->tag_prefix);
+    flb_sds_destroy(ctx->custom_k8s_regex);
+
+    if (ctx->stackdriver_agent) {
+        flb_sds_destroy(ctx->stackdriver_agent);
+    }
+
     if (ctx->metadata_server_auth) {
         flb_sds_destroy(ctx->zone);
         flb_sds_destroy(ctx->instance_id);
